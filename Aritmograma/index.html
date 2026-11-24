@@ -1,0 +1,684 @@
+<style>
+    .aritmograma-wrapper {
+      --am-primary: #4f46e5;
+      --am-bg: #f8fafc;
+      --am-cell-bg: #ffffff;
+      --am-correct: #bbf7d0;
+      --am-wrong: #fecaca;
+      --am-border: #cbd5e1;
+      width: min(100% - 24px, 460px);
+      margin: 20px auto;
+      padding: 20px;
+      background: var(--am-bg);
+      color: #1e293b;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-radius: 12px;
+      border: 2px solid var(--am-border);
+      box-sizing: border-box;
+    }
+    .aritmograma-wrapper *,
+    .aritmograma-wrapper *::before,
+    .aritmograma-wrapper *::after { box-sizing: border-box; }
+    .am-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      text-align: center;
+      margin: 0 auto 16px;
+    }
+    .am-title {
+      width: 100%;
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #334155;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .am-credits {
+      width: 100%;
+      font-size: .68rem;
+      line-height: 1.5;
+      color: #64748b;
+      font-weight: 400;
+    }
+    .am-difficulty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 0 auto 12px;
+      font-size: .9rem;
+      font-weight: 600;
+    }
+    .am-difficulty select {
+      padding: 7px 28px 7px 9px;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      background: #fff;
+      color: #334155;
+      font: inherit;
+    }
+    .am-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-rows: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+      width: min(100%, 360px);
+      aspect-ratio: 1;
+      margin: 0 auto 18px;
+      background: #cbd5e1;
+      padding: 6px;
+      border-radius: 8px;
+    }
+    .am-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 0;
+      font-size: clamp(.85rem, 4vw, 1.2rem);
+      font-weight: 700;
+      border-radius: 4px;
+    }
+    .am-op {
+      color: #475569;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+    }
+    .am-res {
+      color: #fff;
+      background: #334155;
+      border: 1px solid #1e293b;
+      font-size: clamp(.72rem, 3.2vw, 1rem);
+    }
+    .am-eq { color: #64748b; background: transparent; }
+    .am-empty-space { background: #94a3b8; opacity: .4; }
+    .am-input-cell {
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--am-cell-bg);
+      border: 2px solid #94a3b8;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      text-align: center;
+      font-size: clamp(.85rem, 4vw, 1.2rem);
+      font-weight: 700;
+      border-radius: 4px;
+      color: var(--am-primary);
+      padding: 0;
+      outline: none;
+      cursor: text;
+      caret-color: var(--am-primary);
+    }
+    .am-input-cell:focus {
+      border-color: var(--am-primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, .2);
+      position: relative;
+      z-index: 1;
+    }
+    .am-input-cell.am-correct {
+      background-color: var(--am-correct);
+      border-color: #22c55e;
+      color: #15803d;
+    }
+    .am-input-cell.am-wrong {
+      background-color: var(--am-wrong);
+      border-color: #ef4444;
+      color: #b91c1c;
+    }
+    .am-input-cell.am-hint-applied {
+      background-color: #bae6fd;
+      border-color: #0ea5e9;
+      color: #0369a1;
+    }
+    .am-input-cell:disabled { opacity: 1; cursor: default; }
+    .am-btn-container {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .aritmograma-wrapper button {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 12px 6px;
+      font-size: clamp(.78rem, 3.5vw, 1rem);
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+    }
+    .am-btn-check { background: var(--am-primary); color: #fff; }
+    .am-btn-check:hover:not(:disabled) { background: #4338ca; }
+    .am-btn-new { background: #e2e8f0; color: #334155; }
+    .am-btn-new:hover:not(:disabled) { background: #cbd5e1; }
+    .am-btn-hint { background: #0ea5e9; color: #fff; }
+    .am-btn-hint:hover:not(:disabled) { background: #0284c7; }
+    .aritmograma-wrapper button:focus-visible,
+    .am-difficulty select:focus-visible {
+      outline: 3px solid #818cf8;
+      outline-offset: 3px;
+    }
+    .aritmograma-wrapper button:disabled {
+      opacity: .48;
+      cursor: not-allowed;
+    }
+    .am-msg {
+      width: 100%;
+      margin-top: 12px;
+      font-weight: 600;
+      font-size: .95rem;
+      min-height: 24px;
+      text-align: center;
+    }
+    @media (max-width: 380px) {
+      .aritmograma-wrapper { padding: 12px; }
+      .am-grid { gap: 3px; padding: 4px; }
+      .am-btn-container { gap: 6px; }
+      .am-title { font-size: 1.3rem; }
+    }
+  </style>
+
+  <div class="aritmograma-wrapper">
+    <div class="am-header">
+      <div class="am-title">ARITMOGRAMA 2.0</div>
+      <div class="am-credits">
+        <b>Ompliu la graella amb les xifres (d'1 a 9)<br />
+          que fan viables les operacions indicades</b><br />
+        Disseny: <i>McAbeu (XAREL-10)</i> amb l'assistència de ChatGPT (OpenAI)
+      </div>
+    </div>
+
+    <label class="am-difficulty">
+      Dificultat:
+      <select aria-label="Selecciona la dificultat" class="am-level">
+        <option value="easy">Fàcil</option>
+        <option selected="" value="medium">Mitjana</option>
+        <option value="hard">Difícil</option>
+      </select>
+    </label>
+
+    <div aria-label="Graella de l'aritmograma" class="am-grid"></div>
+
+    <div class="am-btn-container">
+      <button class="am-btn-check" type="button">Comprova</button>
+      <button class="am-btn-hint" type="button">Pista</button>
+      <button class="am-btn-new" type="button">Nou repte</button>
+    </div>
+    <div aria-live="polite" class="am-msg" role="status"></div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const wrapper = document.querySelector(".aritmograma-wrapper");
+      if (!wrapper) return;
+
+      const grid = wrapper.querySelector(".am-grid");
+      const msgEl = wrapper.querySelector(".am-msg");
+      const checkBtn = wrapper.querySelector(".am-btn-check");
+      const hintBtn = wrapper.querySelector(".am-btn-hint");
+      const newBtn = wrapper.querySelector(".am-btn-new");
+      const levelSelect = wrapper.querySelector(".am-level");
+      const operators = ["+", "-", "x", "/"];
+      const numberPositions = [0, 2, 4];
+      let solutionMatrix = [];
+      let puzzleSolved = false;
+
+      const fallbackPuzzles = {
+        easy: {
+          nums: [[4, 5, 2], [5, 9, 8], [4, 1, 7]],
+          rowOps: [["+", "+"], ["+", "+"], ["+", "+"]],
+          colOps: [["+", "+"], ["+", "+"], ["+", "+"]]
+        },
+        medium: {
+          nums: [[7, 8, 6], [1, 1, 9], [7, 4, 7]],
+          rowOps: [["+", "-"], ["x", "x"], ["+", "+"]],
+          colOps: [["/", "/"], ["-", "-"], ["+", "+"]]
+        },
+        hard: {
+          nums: [[4, 2, 6], [9, 3, 5], [7, 3, 3]],
+          rowOps: [["/", "x"], ["+", "x"], ["x", "x"]],
+          colOps: [["-", "+"], ["x", "/"], ["x", "/"]]
+        }
+      };
+
+      function randomChoice(items) {
+        return items[Math.floor(Math.random() * items.length)];
+      }
+
+      function weightedOperators(level) {
+        const weights = {
+          // Fàcil: només sumes i restes.
+          easy: ["+", "+", "+", "+", "-", "-", "-", "-"],
+          // Mitjà: permet combinar els quatre tipus d'operació.
+          medium: ["+", "+", "-", "-", "x", "x", "/", "/"],
+          // Difícil: afavoreix les multiplicacions i divisions.
+          hard: ["+", "-", "x", "x", "x", "x", "/", "/", "/", "/"]
+        };
+        return weights[level] || weights.medium;
+      }
+
+      function applyOperation(a, op, b) {
+        switch (op) {
+          case "+": return a + b;
+          case "-": return a - b;
+          case "x": return a * b;
+          case "/":
+            if (b === 0 || a % b !== 0) return null;
+            return a / b;
+          default: return null;
+        }
+      }
+
+      // Avalua d'esquerra a dreta dins de cada nivell de prioritat.
+      function evaluateExpression(n1, op1, n2, op2, n3) {
+        const priority = { "+": 1, "-": 1, "x": 2, "/": 2 };
+        let result;
+
+        if (priority[op1] >= priority[op2]) {
+          const first = applyOperation(n1, op1, n2);
+          if (first === null) return null;
+          result = applyOperation(first, op2, n3);
+        } else {
+          const second = applyOperation(n2, op2, n3);
+          if (second === null) return null;
+          result = applyOperation(n1, op1, second);
+        }
+
+        if (!Number.isInteger(result) || result <= 0 || result > 100) return null;
+        return result;
+      }
+
+      function buildMatrix(candidate) {
+        const matrix = Array.from({ length: 7 }, () => Array(7).fill(""));
+        const rowResults = [];
+        const colResults = [];
+
+        for (let r = 0; r < 3; r++) {
+          const nums = candidate.nums[r];
+          const ops = candidate.rowOps[r];
+          const result = evaluateExpression(nums[0], ops[0], nums[1], ops[1], nums[2]);
+          if (result === null) return null;
+          rowResults.push(result);
+
+          const rr = r * 2;
+          matrix[rr][0] = nums[0];
+          matrix[rr][1] = ops[0];
+          matrix[rr][2] = nums[1];
+          matrix[rr][3] = ops[1];
+          matrix[rr][4] = nums[2];
+          matrix[rr][5] = "=";
+          matrix[rr][6] = result;
+        }
+
+        for (let c = 0; c < 3; c++) {
+          const ops = candidate.colOps[c];
+          const result = evaluateExpression(
+            candidate.nums[0][c], ops[0],
+            candidate.nums[1][c], ops[1],
+            candidate.nums[2][c]
+          );
+          if (result === null) return null;
+          colResults.push(result);
+
+          const cc = c * 2;
+          matrix[1][cc] = ops[0];
+          matrix[3][cc] = ops[1];
+          matrix[5][cc] = "=";
+          matrix[6][cc] = result;
+        }
+
+        return matrix;
+      }
+
+      function meetsDifficulty(candidate, level) {
+        // Hi ha 12 operacions en total: 6 horitzontals i 6 verticals.
+        const allOps = candidate.rowOps.flat().concat(candidate.colOps.flat());
+        const advanced = allOps.filter(op => op === "x" || op === "/").length;
+
+        if (level === "easy") return advanced === 0;
+        if (level === "medium") return advanced >= 3 && advanced <= 6;
+        return advanced >= 7;
+      }
+
+      function generatePuzzle() {
+        const level = levelSelect.value;
+        const choices = weightedOperators(level);
+
+        // Cerca aleatòria acotada: mai no hi ha un bucle indefinit.
+        for (let attempt = 0; attempt < 12000; attempt++) {
+          const candidate = {
+            nums: Array.from({ length: 3 }, () =>
+              Array.from({ length: 3 }, () => 1 + Math.floor(Math.random() * 9))
+            ),
+            rowOps: Array.from({ length: 3 }, () => [
+              randomChoice(choices), randomChoice(choices)
+            ]),
+            colOps: Array.from({ length: 3 }, () => [
+              randomChoice(choices), randomChoice(choices)
+            ])
+          };
+
+          const rowResults = candidate.nums.map((nums, i) =>
+            evaluateExpression(nums[0], candidate.rowOps[i][0],
+              nums[1], candidate.rowOps[i][1], nums[2])
+          );
+          if (rowResults.some(value => value === null)) continue;
+
+          const colResults = [0, 1, 2].map(c =>
+            evaluateExpression(candidate.nums[0][c], candidate.colOps[c][0],
+              candidate.nums[1][c], candidate.colOps[c][1], candidate.nums[2][c])
+          );
+          if (colResults.some(value => value === null)) continue;
+          if (!meetsDifficulty(candidate, level)) continue;
+
+          const matrix = buildMatrix(candidate);
+          if (matrix) return matrix;
+        }
+
+        // Reserva específica per nivell, també validada amb el mateix avaluador.
+        const fallback = fallbackPuzzles[level] || fallbackPuzzles.medium;
+        const matrix = buildMatrix(fallback);
+        if (!matrix) throw new Error("El repte de reserva no supera la validació matemàtica.");
+        return matrix;
+      }
+
+      function showMessage(message, color) {
+        msgEl.textContent = message;
+        msgEl.style.color = color || "#334155";
+      }
+
+      function clearInputState(input) {
+        input.classList.remove("am-correct", "am-wrong", "am-hint-applied");
+      }
+
+      function sanitizeInput(input) {
+        const raw = input.value;
+        if (raw === "") return;
+        if (!/^[1-9]$/.test(raw)) input.value = "";
+      }
+
+      function onInputChanged(input) {
+        sanitizeInput(input);
+        clearInputState(input);
+        input.dataset.revealed = "false";
+        msgEl.textContent = "";
+      }
+
+      function drawGrid() {
+        grid.replaceChildren();
+
+        for (let r = 0; r < 7; r++) {
+          for (let c = 0; c < 7; c++) {
+            const value = solutionMatrix[r][c];
+            const cell = document.createElement("div");
+            cell.className = "am-cell";
+
+            const isResult =
+              (r === 6 && numberPositions.includes(c)) ||
+              (c === 6 && numberPositions.includes(r));
+            const isPlayable = numberPositions.includes(r) && numberPositions.includes(c);
+
+            if (isResult) {
+              cell.classList.add("am-res");
+              cell.textContent = String(value);
+            } else if (value === "=") {
+              cell.classList.add("am-eq");
+              cell.textContent = "=";
+            } else if (operators.includes(value)) {
+              cell.classList.add("am-op");
+              cell.textContent = value;
+            } else if (isPlayable) {
+              const input = document.createElement("input");
+              input.type = "text";
+              input.inputMode = "numeric";
+              input.autocomplete = "off";
+              input.spellcheck = false;
+              input.maxLength = 1;
+              input.pattern = "[1-9]";
+              input.className = "am-input-cell";
+              input.dataset.row = String(r);
+              input.dataset.col = String(c);
+              input.dataset.revealed = "false";
+              input.setAttribute("aria-label", `Fila ${r / 2 + 1}, columna ${c / 2 + 1}`);
+
+              input.addEventListener("beforeinput", event => {
+                if (event.inputType.startsWith("insert") &&
+                    event.data !== null && !/^[1-9]$/.test(event.data)) {
+                  event.preventDefault();
+                }
+              });
+
+              input.addEventListener("keydown", event => {
+                if (event.ctrlKey || event.metaKey || event.altKey ||
+                    ["Backspace", "Delete", "Tab", "ArrowLeft", "ArrowRight",
+                     "ArrowUp", "ArrowDown", "Home", "End", "Enter"].includes(event.key)) return;
+                if (!/^[1-9]$/.test(event.key)) event.preventDefault();
+              });
+
+              input.addEventListener("paste", event => {
+                event.preventDefault();
+                const pasted = event.clipboardData.getData("text").trim();
+                if (/^[1-9]$/.test(pasted)) {
+                  input.value = pasted;
+                  onInputChanged(input);
+                }
+              });
+
+              input.addEventListener("input", () => onInputChanged(input));
+              input.addEventListener("focus", () => input.select());
+              cell.appendChild(input);
+            } else {
+              cell.classList.add("am-empty-space");
+            }
+            grid.appendChild(cell);
+          }
+        }
+      }
+
+      function getInputs() {
+        return Array.from(grid.querySelectorAll(".am-input-cell"));
+      }
+
+      function getEnteredDigits() {
+        const digits = Array.from({ length: 3 }, () => Array(3).fill(null));
+        let complete = true;
+
+        getInputs().forEach(input => {
+          const r = Number(input.dataset.row) / 2;
+          const c = Number(input.dataset.col) / 2;
+          const value = input.value;
+          if (!/^[1-9]$/.test(value)) {
+            complete = false;
+          } else {
+            digits[r][c] = Number(value);
+          }
+        });
+        return { digits, complete };
+      }
+
+      function evaluateEnteredGrid(digits) {
+        const rowOK = [];
+        const colOK = [];
+
+        for (let r = 0; r < 3; r++) {
+          const rr = r * 2;
+          const result = evaluateExpression(
+            digits[r][0], solutionMatrix[rr][1], digits[r][1],
+            solutionMatrix[rr][3], digits[r][2]
+          );
+          rowOK.push(result !== null && result === solutionMatrix[rr][6]);
+        }
+
+        for (let c = 0; c < 3; c++) {
+          const cc = c * 2;
+          const result = evaluateExpression(
+            digits[0][c], solutionMatrix[1][cc], digits[1][c],
+            solutionMatrix[3][cc], digits[2][c]
+          );
+          colOK.push(result !== null && result === solutionMatrix[6][cc]);
+        }
+        return { rowOK, colOK, solved: rowOK.every(Boolean) && colOK.every(Boolean) };
+      }
+
+      function finishPuzzle() {
+        puzzleSolved = true;
+        getInputs().forEach(input => {
+          input.disabled = true;
+          input.classList.remove("am-wrong");
+          if (input.dataset.revealed === "true") {
+            input.classList.add("am-hint-applied");
+          } else {
+            input.classList.add("am-correct");
+          }
+        });
+        checkBtn.disabled = true;
+        hintBtn.disabled = true;
+        showMessage("Excepcional! Aritmograma resolt correctament!", "#16a34a");
+      }
+
+      function checkPuzzle() {
+        if (puzzleSolved) return;
+
+        const { digits, complete } = getEnteredDigits();
+        const inputs = getInputs();
+
+        // Si la graella és completa, primer comprovem les sis operacions.
+        // Això permet acceptar també una solució alternativa matemàticament vàlida.
+        if (complete) {
+          const result = evaluateEnteredGrid(digits);
+          if (result.solved) {
+            finishPuzzle();
+            return;
+          }
+        }
+
+        // En una comprovació parcial, cada casella es contrasta per separat
+        // amb la xifra de la solució generada. Així un error no arrossega
+        // visualment les altres caselles de la mateixa fila o columna.
+        let correctCount = 0;
+        let wrongCount = 0;
+        let emptyCount = 0;
+
+        inputs.forEach(input => {
+          const r = Number(input.dataset.row);
+          const c = Number(input.dataset.col);
+          const value = input.value.trim();
+
+          input.classList.remove("am-correct", "am-wrong", "am-hint-applied");
+
+          if (value === "") {
+            emptyCount++;
+            return;
+          }
+
+          if (!/^[1-9]$/.test(value)) {
+            input.value = "";
+            emptyCount++;
+            return;
+          }
+
+          if (Number(value) === solutionMatrix[r][c]) {
+            correctCount++;
+            if (input.dataset.revealed === "true") {
+              input.classList.add("am-hint-applied");
+            } else {
+              input.classList.add("am-correct");
+            }
+          } else {
+            wrongCount++;
+            input.classList.add("am-wrong");
+          }
+        });
+
+        if (wrongCount > 0 && emptyCount > 0) {
+          showMessage(
+            `Correctes: ${correctCount} - Incorrectes: ${wrongCount} - Pendents: ${emptyCount}.`,
+            "#dc2626"
+          );
+        } else if (wrongCount > 0) {
+          showMessage(
+            `Correctes: ${correctCount} - Incorrectes: ${wrongCount}. Revisa les caselles vermelles.`,
+            "#dc2626"
+          );
+        } else if (emptyCount > 0) {
+          showMessage(
+            `Molt bé! Les ${correctCount} xifres introduïdes són correctes. En queden ${emptyCount} per omplir.`,
+            "#16a34a"
+          );
+        } else {
+          // En aquest punt totes les caselles estan plenes però les operacions
+          // no concorden; les xifres es mostren individualment segons la solució.
+          showMessage(
+            `Hi ha una o més operacions incorrectes. Correctes: ${correctCount} - Incorrectes: ${wrongCount}.`,
+            "#dc2626"
+          );
+        }
+      }
+
+      function giveHint() {
+        if (puzzleSolved) return;
+
+        const { digits, complete } = getEnteredDigits();
+        if (complete && evaluateEnteredGrid(digits).solved) {
+          finishPuzzle();
+          return;
+        }
+
+        const candidates = getInputs().filter(input => {
+          const r = Number(input.dataset.row);
+          const c = Number(input.dataset.col);
+          return input.value !== String(solutionMatrix[r][c]);
+        });
+
+        if (candidates.length === 0) {
+          showMessage("Ja tens la combinació proposada. Prem «Comprova»!", "#16a34a");
+          return;
+        }
+
+        const selected = randomChoice(candidates);
+        const r = Number(selected.dataset.row);
+        const c = Number(selected.dataset.col);
+        selected.value = String(solutionMatrix[r][c]);
+        selected.dataset.revealed = "true";
+        selected.classList.remove("am-wrong", "am-correct");
+        selected.classList.add("am-hint-applied");
+        showMessage("T'hem revelat una casella!", "#0284c7");
+      }
+
+      function initPuzzle() {
+        puzzleSolved = false;
+        solutionMatrix = generatePuzzle();
+        msgEl.textContent = "";
+        checkBtn.disabled = false;
+        hintBtn.disabled = false;
+        drawGrid();
+      }
+
+      checkBtn.addEventListener("click", checkPuzzle);
+      hintBtn.addEventListener("click", giveHint);
+      newBtn.addEventListener("click", initPuzzle);
+      levelSelect.addEventListener("change", initPuzzle);
+
+      initPuzzle();
+    })();
+  </script>
+<br />
+<br /><div style="text-align: justify;"><b>CRÈDITS:</b><br />
+ Aquest joc és un projecte de <i><a href="https://xarel-10.blogspot.com/" target="_blank">McAbeu [XAREL-10]</a></i> (idea, disseny i especificacions), amb la col·laboració de <i>ChatGPT [OpenAI]</i> (programació i implementació del codi).<br />
+<br />
+  <b>Nota sobre la resolució de les operacions:</b><br />
+Les operacions segueixen la jerarquia matemàtica habitual: primer es resolen les multiplicacions i les divisions, i després les sumes i les restes. Per exemple: 3 + 2 × 5 = 13, i no pas 25, perquè primer cal fer la multiplicació (2 × 5) i després la suma.</div>
+<br />
+<br />
